@@ -1,0 +1,1120 @@
+openapi: 3.0.0
+info:
+    description: "This is the REST 'contract' for the Order System"
+    version: 1.0.0
+    title: "(20F) Group Project - Order System"
+    contact:
+        name: "(20F) CST 8277"
+        email: "normanm@algonquincollege.com"
+        url: "https://brightspace.algonquincollege.com/d2l/home/279461"
+servers:
+    -
+        url: "http://localhost:{port}/{contextRoot}/{basePath}"
+        variables:
+            port: {
+                default: "9090"
+            }
+            contextRoot: {
+                default: "rest-orderSystem"
+            }
+            basePath: {
+                default: "api/v1"
+            }
+
+security:
+    -
+        basicAuth: []
+
+components:
+    securitySchemes:
+        basicAuth:
+            type: http
+            scheme: basic
+
+    parameters:
+        idPathParam:
+            in: path
+            name: id
+            required: true
+            schema: {
+                type: integer,
+                format: int64,
+                description: "customer's id",
+                example: 1
+            }
+        orderidPathParam:
+            in: path
+            name: orderid
+            required: true
+            schema: {
+                type: integer,
+                format: int64,
+                description: "order's id",
+                example: 1
+            }
+        orderLineNoPathParam:
+            in: path
+            name: orderLineNo
+            required: true
+            schema: {
+                type: integer,
+                format: int64,
+                description: "a orderline's number",
+                example: 1
+            }
+       
+    responses:
+        ForbiddenError:
+            description: "Access to the specified resource has been forbidden"
+        UnauthorizedAdminError:
+            description: "request requires HTTP authentication for ADMIN_ROLE"
+        UnauthorizedUserError:
+            description: "request requires HTTP authentication for USER_ROLE"
+        NotFound:
+            description: "The specified resource was not found"
+
+    schemas:
+        PojoBase:
+            type: object
+            required: [id, version]
+            properties: {
+                id: {
+                    description: "id of entity",
+                    type: integer
+                },
+                version: {
+                    description: "version (OptLock) of entity",
+                    type: integer
+                },
+                createdDate: {
+                    description: "creation timestamp of entity",
+                    type: string,
+                    format: date-time
+                    },
+                updatedDate: {
+                    description: "last-updatd timestamp of entity",
+                    type: string,
+                    format: date-time
+                }
+            }
+
+        Customer:
+            description: "(20F) Group Project - Customer entity"
+            type: object
+            allOf: [{
+                $ref: "#/components/schemas/PojoBase"
+            }]
+            properties: {
+                firstName: {type: string, description: "First Name of the customer", example: John},
+                lastName: {type: string, description: "Last Name of the customer", example: Doe},
+                email: {type: string, description: "Email of the customer", example: John.Doe@gmail.com},
+                phoneNumber: {type: string, description: "Phone # of the customer", example: '+1.613.555.1212'},
+                billingAddress: {$ref: '#/components/schemas/Address'},
+                shippingAddress: {$ref: '#/components/schemas/Address'}
+            }
+            
+            
+        Product:
+            description: "(20F) Group Project - Product entity"
+            type: object
+            allOf: [{
+                $ref: "#/components/schemas/PojoBase"
+            }]
+            properties: {
+                description: {type: string, description: "Description of product", example: John},
+                serialNo: {type: string, description: "serialNo of product", example: Doe},
+                store: {$ref: '#/components/schemas/StoresList'}
+            }
+            
+            
+        Store:
+            description: "(20F) Group Project - Store entity"
+            type: object
+            allOf: [{
+                $ref: "#/components/schemas/PojoBase"
+            }]
+            properties: {
+                storeName: {type: string, description: "Name of store", example: shopers},
+                product: {$ref: '#/components/schemas/ProductsList'}
+            }
+            
+        CustomersList:
+            description: "list of customers"
+            type: array
+            items: {
+                $ref: "#/components/schemas/Customer"
+            }
+            
+        ProductsList:
+            description: "list of products"
+            type: array
+            items: {
+                $ref: "#/components/schemas/Product"
+            }
+            
+        StoresList:
+            description: "list of stores"
+            type: array
+            items: {
+                $ref: "#/components/schemas/Store"
+            }
+
+        Address:
+            description: "(20W) Group Project - Address entity"
+            discriminator:
+              propertyName: type
+            required: [type]
+            type: object
+            allOf: [{
+                $ref: "#/components/schemas/PojoBase"
+            }]
+            properties: {
+                street: {type: string, description: "Location of Address (street)", example: "1385 Woodroffe Avenue"},
+                city: {type: string, description: "Location of Address (city)", example: "Ottawa"},
+                state: {type: string, description: "Location of Address (State/Province)", example: "ON"},
+                country: {type: string, description: "Location of Address (country)", example: "Canada"},
+                postal: {type: string, description: "Postal Code", example: "K2G 1V8"},
+               
+            }
+        BillingAddress:
+            allOf: [{
+                $ref: "#/components/schemas/Address"  # BillingAddress has all properties of Address
+            }]
+            properties: { # extra properties only for BillingAddress
+                alsoShipping: {type: boolean, description: "indicates that this BillingAddress is also the customer's ShippingAddress"},
+                 type: {type: string, description: "type of address", example: "B"}
+            }
+        ShippingAddress:
+            allOf: [{
+                $ref: "#/components/schemas/Address"  # ShippingAddress has all properties of Address
+            }]
+            properties: { # extra properties only for BillingAddress
+                 type: {type: string, description: "type of address", example: "S"}
+            }
+
+
+        Order:
+            description: "(20F) Group Project - Order entity"
+            type: object
+            allOf: [{
+                $ref: "#/components/schemas/PojoBase"
+            }]
+            properties: {
+                description: {type: string, description: "Description of order", example: new order}
+                
+            }
+
+        OrderLine:
+            description: "(20F) Group Project - OrderLine entity"
+            type: object
+            properties: {
+                amount: {type: number, description: "amount of orderline", example: 10.00},
+                product: {$ref: '#/components/schemas/Product'},
+                pk: { $ref: "#/components/schemas/PK"}
+            }
+            
+        PK:
+            description: "(20F) Group Project - OrderLine entity"
+            type: object
+            properties: {
+                orderLineNo: {type: number, description: "amount of orderline", example: 1},
+                owningOrderId: {type: number, description: "amount of orderline", example: 10}
+            }
+          
+
+paths:
+    /customer:
+        get:
+            summary: "{admin} Get all customers"
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/CustomersList"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedAdminError"
+                }
+            }
+
+        post:
+            summary: "{admin} Post a new customer"
+            requestBody: {
+                description: "new customer to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Customer"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/CustomersList"
+                            }
+                        }
+                    }
+                }
+            }
+
+    /customer/{id}:
+        get:
+            summary: "{admin and user} Get a customer by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Customer"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        delete:
+            summary: "{admin} Delete a customer by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "204": {
+                    description: "Ok (No content, successful operation)"
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        put:
+            summary: "{admin} Update a customer by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new customer to be modified to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Customer"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Customer"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+    /customer/{id}/billingAddress:
+        get:
+            summary: "{admin} Retrieves addresses"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/BillingAddress"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        
+        post:
+            summary: "{admin} Post a new billing address"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new customer to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/BillingAddress"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/BillingAddress"
+                            }
+                        }
+                    }
+                }
+            }
+        delete:
+            summary: "{admin} Delete an address by a id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "204": {
+                    description: "Ok (No content, successful operation)"
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        put:
+            summary: "{admin} Update an address by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new address to be modified to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/BillingAddress"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Customer"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+            
+    /customer/{id}/shippingAddress:
+        get:
+            summary: "{admin} Retrieves all addresses"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/ShippingAddress"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        
+        post:
+            summary: "{admin} Post a new billing address"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new customer to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/ShippingAddress"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/ShippingAddress"
+                            }
+                        }
+                    }
+                }
+            }
+        delete:
+            summary: "{admin} Delete a Shipping address by a id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "204": {
+                    description: "Ok (No content, successful operation)"
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        put:
+            summary: "{admin} Update an Shipping address by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new address to be modified to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/ShippingAddress"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/ShippingAddress"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+           
+    /product:
+        get:
+            summary: "{All} Get all products"
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Product"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedAdminError"
+                }
+            }
+
+        post:
+            summary: "{admin} Post a product"
+            requestBody: {
+                description: "new product to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Product"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Product"
+                            }
+                        }
+                    }
+                }
+            }
+
+    /product/{id}:
+        get:
+            summary: "{All} Get a product by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Product"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        delete:
+            summary: "{admin} Delete a product by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "204": {
+                    description: "Ok (No content, successful operation)"
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        put:
+            summary: "{admin} Update a product by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new customer to be modified to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Product"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Product"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+            
+            
+            
+            
+    /store:
+        get:
+            summary: "{All} Get all stores"
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Store"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedAdminError"
+                }
+            }
+
+        post:
+            summary: "{admin} Post a store"
+            requestBody: {
+                description: "new store to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Store"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Store"
+                            }
+                        }
+                    }
+                }
+            }
+
+    /store/{id}:
+        get:
+            summary: "{All} Get a store by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Store"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        delete:
+            summary: "{admin} Delete a store by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "204": {
+                    description: "Ok (No content, successful operation)"
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        put:
+            summary: "{admin} Update a store by its id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new customer to be modified to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Store"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Store"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }            
+            
+            
+            
+    /customer/{id}/order:
+        get:
+            summary: "{admin and user} Get customer all orders"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Order"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedAdminError"
+                }
+            }
+
+        post:
+            summary: "{admin and user} Post an order by customer id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            }]
+            requestBody: {
+                description: "new store to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Order"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Order"
+                            }
+                        }
+                    }
+                }
+            }
+            
+    /customer/{id}/order/{orderid}:
+        get:
+            summary: "{admin and user} Get an order by its id and customer id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            }]
+            responses: {
+                "200": { 
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Order"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        delete:
+            summary: "{admin} Delete an order by its id and customer id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            }]
+            responses: {
+                "204": {
+                    description: "Ok (No content, successful operation)"
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+        put:
+            summary: "{admin} Update an order by its id and customer id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            }]
+            requestBody: {
+                description: "new customer to be modified to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/Order"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/Order"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }       
+
+    /customer/{id}/order/{orderid}/orderline:
+        get:
+            summary: "{admin} Get customer's order's orderlines"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/OrderLine"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedAdminError"
+                }
+            }
+
+        post:
+            summary: "{admin} Post a customer's order's orderline"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            }]
+            requestBody: {
+                description: "new store to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/OrderLine"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/OrderLine"
+                            }
+                        }
+                    }
+                }
+            }
+    /customer/{id}/order/{orderid}/orderline/{orderLineNo}:
+        get:
+            summary: "{admin} Get orderline by customer id, order id and orderline id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            },{
+                $ref: "#/components/parameters/orderLineNoPathParam"
+            }]
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/OrderLine"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedAdminError"
+                }
+            }
+
+        put:
+            summary: "{admin} Update orderline by customer id, order id and orderline id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            },{
+                $ref: "#/components/parameters/orderLineNoPathParam"
+            }]
+            requestBody: {
+                description: "new store to be added to Db",
+                required: true,
+                content: {
+                    application/json: {
+                        schema: {
+                            $ref: "#/components/schemas/OrderLine"
+                        }
+                    }
+                }
+            }
+            responses: {
+                "200": {
+                    description: "Ok (Successful operation)",
+                    content: {
+                        application/json: {
+                            schema: {
+                                $ref: "#/components/schemas/OrderLine"
+                            }
+                        }
+                    }
+                }
+            }
+        delete:
+            summary: "{admin} Delete a orderline by its id, customer id and orderline id"
+            parameters: [{
+                $ref: "#/components/parameters/idPathParam"
+            },{
+                $ref: "#/components/parameters/orderidPathParam"
+            },{
+                $ref: "#/components/parameters/orderLineNoPathParam"
+            }]
+            responses: {
+                "204": {
+                    description: "Ok (No content, successful operation)"
+                },
+                "401": {
+                    $ref: "#/components/responses/UnauthorizedUserError"
+                },
+                "403": {
+                    $ref: "#/components/responses/ForbiddenError"
+                },
+                "404": {
+                    $ref: "#/components/responses/NotFound"
+                }
+            }
+            
+    
